@@ -1,2 +1,95 @@
-# ui5-lib-util
-A set of UI5 utilities to download and build OpenUI5 automatically.
+# ❤ ui5-lib-util
+ui5-lib-util was made to build a production version of UI5 and represents an alternative to [SAPs Grunt based build tool](https://github.com/SAP/openui5/blob/master/docs/developing.md).
+The build is responsible for the following tasks:
+- Creation of the bundled library.css and library-RTL.css file for all available themes
+- Minification of CSS
+- Minification of JavaScript
+- Combination of JavaScript control files into a single library-preload.js file
+- Combination of the most important UI5 core files into sap-ui-core.js
+
+The reason why we created this (from our point of view optimized) alternative is the following statement from SAP:
+> IMPORTANT: as we are still migrating our build infrastructure from the old Maven-based one, this new Grunt build does not yet have all desired capabilities. Bear with us as we are adding them. This means that currently the build result is not completely optimized for size and performance! (SAP, 2014)
+
+## Install
+Install ui5-lib-util as a development dependency:
+```
+yarn add ui5-lib-util --dev
+```
+
+## How to use
+ui5-lib-util is designed as an agnostic node module and can be used standalone in your custom build script or as part of e.g. a gulp build task.
+
+Example with gulp `4.0.0` (JavaScript ES6):
+```js
+import gulp from 'gulp'
+import { ui5Download, ui5Build } from 'ui5-lib-util'
+
+// create gulp task
+const loadUI5 = gulp.series(downloadOpenUI5, buildOpenUI5)
+export { loadUI5 }
+
+// download task
+function downloadOpenUI5() {
+  const sDownloadURL = 'https://github.com/SAP/openui5/archive/master.zip'
+  const sDestinationPath = './dl'
+  const sUI5Version = '1.49.0-SNAPSHOT'
+  const oDownloadOptions = {
+    onProgress(iStep, iTotalSteps, oStepDetails) {
+      console.log(`Downloading UI5... [${iStep}/${iTotalSteps}] ${Math.round(
+        oStepDetails.progress || 0
+      )}%`)
+    }
+  }
+
+  // the UI5 library will be downloaded and unzipped to ./dl/1.49.0-SNAPSHOT
+  return ui5Download(sDownloadURL, sDestinationPath, sUI5Version, oDownloadOptions)
+    .then(sSuccessMessage => {
+      console.log(sSuccessMessage)
+    })
+    .catch(sErrorMessage => {
+      console.error(sErrorMessage)
+    })
+}
+
+// build task
+function buildOpenUI5() {
+  const sSourceCodePath = './dl/1.49.0-SNAPSHOT'
+  const sDestinationPath = './ui5'
+  const sUI5Version = '1.49.0-SNAPSHOT'
+  const oBuildOptions = {
+    onProgress(iStep, iTotalSteps, oStepDetails) {
+      console.log(`Build UI5... [${iStep}/${iTotalSteps}] (${oStepDetails.name})`)
+    }
+  }
+
+  // the UI5 library build will be created at ./ui5/1.49.0-SNAPSHOT
+  return ui5Build(
+      sSourceCodePath,
+      sDestinationPath,
+      sUI5Version,
+      oBuildOptions
+    )
+    .then(sSuccessMessage => {
+      console.log(sSuccessMessage)
+    })
+    .catch(sErrorMessage => {
+      console.error(sErrorMessage)
+    })
+}
+
+```
+
+Furtheremore, in the [OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit) you can find ui5-lib-util integrated in a complete build script.
+
+
+### Outlook
+
+Here is a brief overview on what we are working right know and what will follow, soon. We are interested to hear your opinion on what should follow next.
+
+Current idea backlog (unordered):
+- Optimized OpenUI5 library modules (containing only these controls you used)
+
+### License
+
+This project is licensed under the MIT license.
+Copyright 2017 [PulseShift GmbH](https://pulseshift.com/en/index.html)
