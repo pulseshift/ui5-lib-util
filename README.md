@@ -13,7 +13,7 @@ The reason why we created this (from our point of view optimized) alternative is
 ## Install
 Install ui5-lib-util as a development dependency:
 ```
-yarn add ui5-lib-util --dev
+yarn add ui5-lib-util@alpha --dev
 ```
 
 ## How to use
