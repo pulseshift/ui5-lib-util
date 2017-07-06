@@ -81,6 +81,29 @@ function buildOpenUI5() {
 
 Furtheremore, in the [OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit) you can find ui5-lib-util integrated in a complete build script.
 
+## ui5Download
+```js
+ui5Download(downloadURL, destinationPath, ui5Version, [options])
+```
+
+#### Parameters
+- `downloadURL` (string) The source URL of a single file (archive).
+- `destinationPath` (string) Path of destination directory used for the extracted download files.
+- `ui5Version` (string) Explicit version of the OpenUI5 library. Used as root folder at destination directory for the downloaded and extracted files.
+- `options` (object, optional) The configuration options object.
+- `options.onProgress` (function(number, number, object):void, optional) Callback function to track download progress taking as params: current step number, total step number and if available, step details (e.g. name of current step and progress in percent).
+
+## ui5Build
+```js
+ui5Build(sourcePath, destinationPath, ui5Version, [options])
+```
+
+#### Parameters
+- `sourcePath` (string) Path of source directory containing OpenUI5 source code.
+- `destinationPath` (string) Path of destination directory for the build OpenUI5 library.
+- `ui5Version` (string) Explicit version of the OpenUI5 library. Used as root folder at destination directory for the build. *Note: Only versions  from 1.40.0 or higher are supported.*
+- `options` (object, optional) The configuration options object.
+- `options.onProgress` (function(number, number, object):void, optional) Callback function to track build progress taking as params: current step number, total step number and if available, step details (e.g. name of current step).
 
 ### Outlook
 
