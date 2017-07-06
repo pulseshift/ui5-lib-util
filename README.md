@@ -1,4 +1,4 @@
-# ❤ ui5-lib-util
+# ❤ ui5-lib-util *(alpha)*
 ui5-lib-util was made to build a production version of UI5 and represents an alternative to [SAPs Grunt based build tool](https://github.com/SAP/openui5/blob/master/docs/developing.md).
 The build is responsible for the following tasks:
 - Creation of the bundled library.css and library-RTL.css file for all available themes
