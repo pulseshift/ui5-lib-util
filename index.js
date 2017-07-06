@@ -5,33 +5,28 @@
  *
  *  Licensed under the MIT License.
  *
- *  This file makes use of new JavaScript features.
- *  Babel handles this without us having to do anything. It just works.
- *  You can read more about the new JavaScript features here:
- *  https://babeljs.io/docs/learn-es2015/
- *
  */
 
-import gulp from 'gulp'
-import gulpif from 'gulp-if'
-import rename from 'gulp-rename'
-import tap from 'gulp-tap'
-import uglify from 'gulp-uglify'
-import cleanCSS from 'gulp-clean-css'
-import ui5preload from 'gulp-ui5-preload'
-import lessOpenUI5 from 'less-openui5'
-import request from 'request'
-import progress from 'request-progress'
-import Zip from 'adm-zip'
-import { execSync } from 'child_process'
-import fs from 'fs'
-import path from 'path'
+const gulp = require('gulp')
+const gulpif = require('gulp-if')
+const rename = require('gulp-rename')
+const tap = require('gulp-tap')
+const uglify = require('gulp-uglify')
+const cleanCSS = require('gulp-clean-css')
+const ui5preload = require('gulp-ui5-preload')
+const lessOpenUI5 = require('less-openui5')
+const request = require('request')
+const progress = require('request-progress')
+const Zip = require('adm-zip')
+const { execSync } = require('child_process')
+const fs = require('fs')
+const path = require('path')
 
 // create a builder instance
 const builder = new lessOpenUI5.Builder()
 
 // export functions
-export { ui5Download, ui5Build }
+module.exports = { ui5Download, ui5Build }
 
 /**
  * Download OpenUI5 repository from external URL and unzip.
@@ -106,10 +101,13 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
         ).on('progress', oProgressDetails => {
           // update progress information
           const oStep = oSteps['download']
-          fnProgressCallback(oStep.number, iTotalSteps, {
-            ...oStep.details,
-            progress: oProgressDetails.percent * 100
-          })
+          fnProgressCallback(
+            oStep.number,
+            iTotalSteps,
+            Object.assign({}, oStep.details, {
+              progress: oProgressDetails.percent * 100
+            })
+          )
         })
       })
 }
