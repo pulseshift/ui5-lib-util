@@ -26,7 +26,7 @@ const path = require('path')
 const builder = new lessOpenUI5.Builder()
 
 // export functions
-module.exports = { ui5Download, ui5Build }
+module.exports = { ui5Download, ui5Build, ui5CompileLessLib }
 
 /**
  * Download OpenUI5 repository from external URL and unzip.
@@ -583,7 +583,7 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
               .pipe(
                 tap(oFile => {
                   // TODO: tap into library.source.less files to customize ui5 bundle
-                  compileUI5LessLib(oFile)
+                  ui5CompileLessLib(oFile)
                 })
               )
               // save at target location
@@ -655,10 +655,10 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
 /**
  * Compile library.source.less and dependencies to library.css.
  *
- * @param {Vinyl} [oFile] Vinyl file object of library-preload.json.
- * @returns {Vinyl} Transformed library-preload.json.
+ * @param {Vinyl} [oFile] Vinyl file object of library.source.less.
+ * @returns {Promise} Promise.
  */
-function compileUI5LessLib(oFile) {
+function ui5CompileLessLib(oFile) {
   const sDestDir = path.dirname(oFile.path)
   const sFileName = oFile.path.split('/').pop()
   const sLessFileContent = oFile.contents.toString('utf8')
@@ -710,7 +710,7 @@ function compileUI5LessLib(oFile) {
       }
 
       // if missing file could be created, try theme build again
-      return isIssueFixed ? compileUI5LessLib(oFile) : Promise.reject()
+      return isIssueFixed ? ui5CompileLessLib(oFile) : Promise.reject()
     })
     .then(oResult => {
       // build css content was successfull >> save result

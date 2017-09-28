@@ -22,7 +22,8 @@ ui5-lib-util is designed as an agnostic node module and can be used standalone i
 Example with gulp `4.0.0` (JavaScript ES6):
 ```js
 import gulp from 'gulp'
-import { ui5Download, ui5Build } from 'ui5-lib-util'
+import tap from 'gulp-tap'
+import { ui5Download, ui5Build, ui5CompileLessLib } from 'ui5-lib-util'
 
 // create gulp task
 const loadUI5 = gulp.series(downloadOpenUI5, buildOpenUI5)
@@ -77,6 +78,21 @@ function buildOpenUI5() {
     })
 }
 
+// compile a ui5 less theme library
+function compileUi5Theme() {
+  const sLibrarySourcePath = './dist/path/to/my/library/themes/sap_belize'
+
+  // create library.css in same directory as library.source.less
+  return new Promise((resolve, reject) =>
+    gulp
+      .src([`${sLibrarySourcePath}/library.source.less`])
+      // rename UI5 module (app component) paths and update UI5 resource roots in UI5 bootstrap of index.html
+      .pipe(tap(oFile => {
+        ui5CompileLessLib(oFile).then(resolve).catch(reject)
+      }))
+  )
+}
+
 ```
 
 Furtheremore, in the [OpenUI5 Starter Kit](https://github.com/pulseshift/openui5-gulp-starter-kit) you can find ui5-lib-util integrated in a complete build script.
@@ -103,6 +119,13 @@ ui5Build(sourcePath, destinationPath, ui5Version, [options])
 * `ui5Version` (string) Explicit version of the OpenUI5 library. Used as root folder at destination directory for the build. *Note: Only versions  from 1.40.0 or higher are supported.*
 * `options` (object, optional) The configuration options object.
 * `options.onProgress` (function(number, number, object):void, optional) Callback function to track build progress taking as params: current step number, total step number and if available, step details (e.g. name of current step).
+
+### `ui5CompileLessLib`
+```js
+ui5CompileLessLib(file)
+```
+
+* `file` ([Vinyl](https://github.com/gulpjs/vinyl)) File must be the `library.source.less` file that imports all required less resources of the library.
 
 ### Outlook
 
