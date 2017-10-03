@@ -94,6 +94,28 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
               // extracts everything
               zip.extractAllTo(sTargetPath, overwrite)
 
+              // if sap-ui-core.js is not located in extracted root,
+              // we will rename the download directory to 'resources'
+              if (!fs.existsSync(`${sTargetPath}/sap-ui-core.js`)) {
+                // read all extracted files in current directory
+                const aFiles = fs.readdirSync(sTargetPath)
+                aFiles.forEach(sFileName => {
+                  if (
+                    fs.statSync(`${sTargetPath}/${sFileName}`).isDirectory()
+                  ) {
+                    // rename download folder in root
+                    try {
+                      fs.renameSync(
+                        `${sTargetPath}/${sFileName}`,
+                        `${sTargetPath}/resources`
+                      )
+                    } catch (e) {
+                      // skip renaming
+                    }
+                  }
+                })
+              }
+
               // resolve promise
               return resolve(`UI5 download successful: ${sTargetPath}`)
             }
