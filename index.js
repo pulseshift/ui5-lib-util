@@ -565,7 +565,7 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                 rename(path => {
                   // normal path: sap/m/themes/sap_belize
                   // update path: sap.m/src/sap/m/themes/base => sap/m/themes/base
-                  const aPathChain = path.dirname.split('/')
+                  const aPathChain = path.dirname.split(path.sep)
                   path.dirname =
                     aPathChain.length > 1 && aPathChain[1] === 'src'
                       ? aPathChain.slice(2, aPathChain.length - 1).join('/')
@@ -682,7 +682,7 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
  */
 function ui5CompileLessLib(oFile) {
   const sDestDir = path.dirname(oFile.path)
-  const sFileName = oFile.path.split('/').pop()
+  const sFileName = oFile.path.split(path.sep).pop()
   const sLessFileContent = oFile.contents.toString('utf8')
 
   // options for less-openui5
