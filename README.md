@@ -1,3 +1,6 @@
+# [DEPRECATED]
+Since 1.54.x you should not use `ui5-lib-util` anymore. Please use the [ui5 build tools](https://github.com/SAP/ui5-tooling) instead.
+
 # ❤ ui5-lib-util *(alpha)*
 ui5-lib-util was made to build a production version of UI5 and represents an alternative to [SAPs Grunt based build tool](https://github.com/SAP/openui5/blob/master/docs/developing.md).
 The build is responsible for the following tasks:
