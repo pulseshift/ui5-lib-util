@@ -18,7 +18,6 @@ const lessOpenUI5 = require('less-openui5')
 const request = require('request')
 const progress = require('request-progress')
 const Zip = require('adm-zip')
-const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 
@@ -61,8 +60,8 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
     }
   }
   const iTotalSteps = Object.keys(oSteps).length
-  const sTargetPath = `${sDownloadPath}/${sUI5Version}`
-  const sSuccessMessage = `UI5 download (${sUI5Version}) already exist at ${sDownloadPath}/${sUI5Version}`
+  const sTargetPath = path.join(sDownloadPath, sUI5Version)
+  const sSuccessMessage = `UI5 download (${sUI5Version}) already exist at ${sTargetPath}`
   const fnProgressCallback =
     typeof oOptions.onProgress === 'function' ? oOptions.onProgress : () => {}
 
@@ -96,21 +95,28 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
 
               // if sap-ui-core.js is not located in extracted root,
               // we will rename the download directory to 'resources'
-              if (!fs.existsSync(`${sTargetPath}/sap-ui-core.js`)) {
+              if (!fs.existsSync(path.join(sTargetPath, 'sap-ui-core.js'))) {
                 // read all extracted files in current directory
                 const aFiles = fs.readdirSync(sTargetPath)
                 aFiles.forEach(sFileName => {
                   if (
-                    fs.statSync(`${sTargetPath}/${sFileName}`).isDirectory()
+                    fs.statSync(path.join(sTargetPath, sFileName)).isDirectory()
                   ) {
                     // rename download folder in root
                     try {
                       fs.renameSync(
-                        `${sTargetPath}/${sFileName}`,
-                        `${sTargetPath}/resources`
+                        path.join(sTargetPath, sFileName),
+                        path.join(sTargetPath, 'resources')
                       )
                     } catch (e) {
                       // skip renaming
+                      console.error(
+                        `Renaming directory "${path.join(
+                          sTargetPath,
+                          sFileName
+                        )}" failed: `,
+                        e
+                      )
                     }
                   }
                 })
@@ -412,11 +418,10 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                     // add preload modules for sap-ui-core.js
                     .concat(aSAPUiCorePreloadModules)
                     // request debug resources, if sap-ui-*-dbg is called
-                    .map(
-                      f =>
-                        oFile.path.endsWith('-dbg.js')
-                          ? f.replace('.js', '-dbg.js')
-                          : f
+                    .map(f =>
+                      oFile.path.endsWith('-dbg.js')
+                        ? f.replace('.js', '-dbg.js')
+                        : f
                     )
                     // read file
                     .map(sScriptPath =>
@@ -455,46 +460,51 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
 
       return Promise.all(
-        aUI5Modules.filter(oModule => oModule.name !== 'sap.ui.core').map(
-          oModule =>
-            new Promise((resolve, reject) =>
-              gulp
-                .src([
-                  `${oModule.targetPath}/**/*.js`,
-                  `!${oModule.targetPath}/**/library-preload.js`,
-                  // don't bundle debug resources
-                  `!${oModule.targetPath}/**/*-dbg.js`,
-                  // exclude modules that are already bundled in sap-ui-core.js
-                  ...aSAPUiCoreAutoIncludedModules
-                    .concat(aSAPUiCorePreloadModules)
-                    .map(sModule => `!${sUI5TargetPath}/${sModule}.js`)
-                ])
-                // TODO: tap into library.js files to customize ui5 bundle
+        aUI5Modules
+          .filter(oModule => oModule.name !== 'sap.ui.core')
+          .map(
+            oModule =>
+              new Promise((resolve, reject) =>
+                gulp
+                  .src([
+                    `${oModule.targetPath}/**/*.js`,
+                    `!${oModule.targetPath}/**/library-preload.js`,
+                    // don't bundle debug resources
+                    `!${oModule.targetPath}/**/*-dbg.js`,
+                    // exclude modules that are already bundled in sap-ui-core.js
+                    ...aSAPUiCoreAutoIncludedModules
+                      .concat(aSAPUiCorePreloadModules)
+                      .map(sModule => `!${sUI5TargetPath}/${sModule}.js`)
+                  ])
+                  // TODO: tap into library.js files to customize ui5 bundle
 
-                // create library-preload.json
-                .pipe(
-                  ui5preload({
-                    base: oModule.targetPath,
-                    namespace: oModule.name,
-                    isLibrary: true // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
-                  })
-                )
-                // transform all library-preload.json files to transform all library-preload.js (mandatory since OpenUI5 1.40)
-                .pipe(
-                  gulpif(
-                    '**/library-preload.json',
-                    tap(oFile => transformPreloadJSON(oFile))
+                  // create library-preload.json
+                  .pipe(
+                    ui5preload({
+                      base: oModule.targetPath,
+                      namespace: oModule.name,
+                      isLibrary: true // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
+                    })
                   )
-                )
-                .pipe(
-                  gulpif('**/library-preload.json', rename({ extname: '.js' }))
-                )
-                // save directly in target location
-                .pipe(gulp.dest(oModule.targetPath))
-                .on('end', resolve)
-                .on('error', reject)
-            ) // end Promise
-        )
+                  // transform all library-preload.json files to transform all library-preload.js (mandatory since OpenUI5 1.40)
+                  .pipe(
+                    gulpif(
+                      '**/library-preload.json',
+                      tap(oFile => transformPreloadJSON(oFile))
+                    )
+                  )
+                  .pipe(
+                    gulpif(
+                      '**/library-preload.json',
+                      rename({ extname: '.js' })
+                    )
+                  )
+                  // save directly in target location
+                  .pipe(gulp.dest(oModule.targetPath))
+                  .on('end', resolve)
+                  .on('error', reject)
+              ) // end Promise
+          )
       )
     }) // end Promise.all
     // 6. now create preload bundle files sap.ui.core, too
@@ -758,10 +768,8 @@ function ui5CompileLessLib(oFile) {
 
       const aWriteFilesPromises = aTargetFiles.map(oFile => {
         return new Promise((resolve, reject) =>
-          fs.writeFile(
-            oFile.path,
-            oFile.content,
-            oError => (oError ? reject() : resolve())
+          fs.writeFile(oFile.path, oFile.content, oError =>
+            oError ? reject() : resolve()
           )
         )
       })
