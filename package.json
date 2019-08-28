@@ -1,6 +1,6 @@
 {
   "name": "ui5-lib-util",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "description": "A set of UI5 utilities to download and build OpenUI5 automatically.",
   "scripts": {
     "precommit": "lint-staged"
@@ -27,20 +27,20 @@
   "main": "index.js",
   "dependencies": {
     "adm-zip": "^0.4.7",
-    "gulp": "gulpjs/gulp#4.0",
-    "gulp-clean-css": "^3.4.2",
-    "gulp-if": "^2.0.2",
+    "gulp": "^4.0.2",
+    "gulp-clean-css": "^4.2.0",
+    "gulp-if": "^3.0.0",
     "gulp-rename": "^1.2.2",
-    "gulp-tap": "^1.0.1",
+    "gulp-tap": "^2.0.0",
     "gulp-uglify": "^3.0.0",
     "gulp-ui5-preload": "^1.3.1",
-    "less-openui5": "^0.3.1",
+    "less-openui5": "^0.6.0",
     "request": "^2.81.0",
     "request-progress": "^3.0.0"
   },
   "devDependencies": {
-    "husky": "^0.14.1",
-    "lint-staged": "^4.0.0",
+    "husky": "^3.0.4",
+    "lint-staged": "^9.2.5",
     "prettier": "^1.5.1"
   }
 }
