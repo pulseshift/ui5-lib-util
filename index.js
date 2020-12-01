@@ -7,25 +7,25 @@
  *
  */
 
-const gulp = require('gulp')
-const gulpif = require('gulp-if')
-const rename = require('gulp-rename')
-const tap = require('gulp-tap')
-const uglify = require('gulp-uglify')
-const cleanCSS = require('gulp-clean-css')
-const ui5preload = require('gulp-ui5-preload')
-const lessOpenUI5 = require('less-openui5')
-const request = require('request')
-const progress = require('request-progress')
-const Zip = require('adm-zip')
-const fs = require('fs')
-const path = require('path')
+const gulp = require("gulp");
+const gulpif = require("gulp-if");
+const rename = require("gulp-rename");
+const tap = require("gulp-tap");
+const terser = require("gulp-terser");
+const cleanCSS = require("gulp-clean-css");
+const ui5preload = require("gulp-ui5-preload");
+const lessOpenUI5 = require("less-openui5");
+const request = require("request");
+const progress = require("request-progress");
+const Zip = require("adm-zip");
+const fs = require("fs");
+const path = require("path");
 
 // create a builder instance
-const builder = new lessOpenUI5.Builder()
+const builder = new lessOpenUI5.Builder();
 
 // export functions
-module.exports = { ui5Download, ui5Build, ui5CompileLessLib }
+module.exports = { ui5Download, ui5Build, ui5CompileLessLib };
 
 /**
  * Download OpenUI5 repository from external URL and unzip.
@@ -40,30 +40,30 @@ module.exports = { ui5Download, ui5Build, ui5CompileLessLib }
 function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
   // check params
   if (!sDownloadURL) {
-    return Promise.reject('No download URL provided')
+    return Promise.reject("No download URL provided");
   }
   if (!sDownloadPath) {
-    return Promise.reject('No download path provided')
+    return Promise.reject("No download path provided");
   }
   if (!sUI5Version) {
-    return Promise.reject('No UI5 version provided')
+    return Promise.reject("No UI5 version provided");
   }
 
   const oSteps = {
     download: {
       number: 1,
-      details: { name: 'download' }
+      details: { name: "download" },
     },
     unzip: {
       number: 2,
-      details: { name: 'unzip' }
-    }
-  }
-  const iTotalSteps = Object.keys(oSteps).length
-  const sTargetPath = path.join(sDownloadPath, sUI5Version)
-  const sSuccessMessage = `UI5 download (${sUI5Version}) already exist at ${sTargetPath}`
+      details: { name: "unzip" },
+    },
+  };
+  const iTotalSteps = Object.keys(oSteps).length;
+  const sTargetPath = path.join(sDownloadPath, sUI5Version);
+  const sSuccessMessage = `UI5 download (${sUI5Version}) already exist at ${sTargetPath}`;
   const fnProgressCallback =
-    typeof oOptions.onProgress === 'function' ? oOptions.onProgress : () => {}
+    typeof oOptions.onProgress === "function" ? oOptions.onProgress : () => {};
 
   // check if ui5 library was already downloaded and ectracted
   return fs.existsSync(sTargetPath)
@@ -78,27 +78,27 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
             (oError, oResponse, oData) => {
               if (oError) {
                 // reject promise
-                return reject(oError)
+                return reject(oError);
               }
 
               // update progress information (start step 2)
-              const oStep = oSteps['unzip']
-              fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+              const oStep = oSteps["unzip"];
+              fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
               // Do something after request finishes
-              const oBuffer = new Buffer(oData, 'binary')
-              const zip = new Zip(oBuffer)
-              const overwrite = true
+              const oBuffer = Buffer.from(oData, "binary");
+              const zip = new Zip(oBuffer);
+              const overwrite = true;
 
               // extracts everything
-              zip.extractAllTo(sTargetPath, overwrite)
+              zip.extractAllTo(sTargetPath, overwrite);
 
               // if sap-ui-core.js is not located in extracted root,
               // we will rename the download directory to 'resources'
-              if (!fs.existsSync(path.join(sTargetPath, 'sap-ui-core.js'))) {
+              if (!fs.existsSync(path.join(sTargetPath, "sap-ui-core.js"))) {
                 // read all extracted files in current directory
-                const aFiles = fs.readdirSync(sTargetPath)
-                aFiles.forEach(sFileName => {
+                const aFiles = fs.readdirSync(sTargetPath);
+                aFiles.forEach((sFileName) => {
                   if (
                     fs.statSync(path.join(sTargetPath, sFileName)).isDirectory()
                   ) {
@@ -106,8 +106,8 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
                     try {
                       fs.renameSync(
                         path.join(sTargetPath, sFileName),
-                        path.join(sTargetPath, 'resources')
-                      )
+                        path.join(sTargetPath, "resources")
+                      );
                     } catch (e) {
                       // skip renaming
                       console.error(
@@ -116,28 +116,28 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
                           sFileName
                         )}" failed: `,
                         e
-                      )
+                      );
                     }
                   }
-                })
+                });
               }
 
               // resolve promise
-              return resolve(`UI5 download successful: ${sTargetPath}`)
+              return resolve(`UI5 download successful: ${sTargetPath}`);
             }
           )
-        ).on('progress', oProgressDetails => {
+        ).on("progress", (oProgressDetails) => {
           // update progress information
-          const oStep = oSteps['download']
+          const oStep = oSteps["download"];
           fnProgressCallback(
             oStep.number,
             iTotalSteps,
             Object.assign({}, oStep.details, {
-              progress: oProgressDetails.percent * 100
+              progress: oProgressDetails.percent * 100,
             })
-          )
-        })
-      })
+          );
+        });
+      });
 }
 
 /**
@@ -153,37 +153,37 @@ function ui5Download(sDownloadURL, sDownloadPath, sUI5Version, oOptions = {}) {
 function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
   // check params
   if (!sUI5SrcPath) {
-    return Promise.reject('No UI5 source path provided')
+    return Promise.reject("No UI5 source path provided");
   }
   if (!fs.existsSync(sUI5SrcPath)) {
-    return Promise.reject(`UI5 source path ${sUI5SrcPath} does not eist`)
+    return Promise.reject(`UI5 source path ${sUI5SrcPath} does not eist`);
   }
   if (!sUI5TargetPath) {
-    return Promise.reject('No UI5 target path provided')
+    return Promise.reject("No UI5 target path provided");
   }
   if (!sUI5Version) {
-    return Promise.reject('No UI5 version provided')
+    return Promise.reject("No UI5 version provided");
   }
 
   // if ui5 target location already exist, cancel to prevent unwanted overrides
   if (fs.existsSync(sUI5TargetPath)) {
     return Promise.resolve(
       `UI5 target directory ${sUI5TargetPath} already exist. Please clean target location for rebuild (directory will be created automatically).`
-    )
+    );
   }
 
-  const isSrcInDownloadRoot = fs.existsSync(`${sUI5SrcPath}/src`)
+  const isSrcInDownloadRoot = fs.existsSync(`${sUI5SrcPath}/src`);
   const isSrcInDownloadSubDir = fs
     .readdirSync(sUI5SrcPath)
-    .some(sPath => fs.existsSync(`${path.join(sUI5SrcPath, sPath)}/src`))
+    .some((sPath) => fs.existsSync(`${path.join(sUI5SrcPath, sPath)}/src`));
   const fnProgressCallback =
-    typeof oOptions.onProgress === 'function' ? oOptions.onProgress : () => {}
+    typeof oOptions.onProgress === "function" ? oOptions.onProgress : () => {};
 
   // cancel if UI5 source code location ('/src' directory) could not be found
   if (!isSrcInDownloadRoot && !isSrcInDownloadSubDir) {
     return Promise.reject(
       `UI5 source code not found in given directory ${sUI5SrcPath}, please check if the given path contains the correct OpenUI5 source code structure.`
-    )
+    );
   }
 
   // update UI5 source path if '/src' directory was found in a sub directory
@@ -196,149 +196,149 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
             ? path.join(sUI5SrcPath, sPath)
             : sFinalPath,
         sUI5SrcPath
-      )
+      );
   }
 
   // define steps for progress information
   const oSteps = {
-    'read modules': { number: 1, details: { name: 'read modules' } },
-    'copy debug resources': {
+    "read modules": { number: 1, details: { name: "read modules" } },
+    "copy debug resources": {
       number: 2,
-      details: { name: 'copy debug scripts' }
+      details: { name: "copy debug scripts" },
     },
-    'copy minified scripts and other resources': {
+    "copy minified scripts and other resources": {
       number: 3,
-      details: { name: 'minify scripts and copy resources' }
+      details: { name: "minify scripts and copy resources" },
     },
-    'compose sap-ui-*.js resources': {
+    "compose sap-ui-*.js resources": {
       number: 4,
-      details: { name: 'compose sap-ui-*.js resources' }
+      details: { name: "compose sap-ui-*.js resources" },
     },
-    'bundle modules': {
+    "bundle modules": {
       number: 5,
-      details: { name: 'bundle modules' }
+      details: { name: "bundle modules" },
     },
-    'copy themes': {
+    "copy themes": {
       number: 6,
-      details: { name: 'copy themes' }
+      details: { name: "copy themes" },
     },
-    'compile themes': {
+    "compile themes": {
       number: 7,
-      details: { name: 'compile themes' }
+      details: { name: "compile themes" },
     },
-    'post-process CSS': {
+    "post-process CSS": {
       number: 8,
-      details: { name: 'minify CSS' }
+      details: { name: "minify CSS" },
     },
-    'compose sap-ui-version.json': {
+    "compose sap-ui-version.json": {
       number: 9,
-      details: { name: 'compose sap-ui-version.json' }
-    }
-  }
-  const iTotalSteps = Object.keys(oSteps).length
+      details: { name: "compose sap-ui-version.json" },
+    },
+  };
+  const iTotalSteps = Object.keys(oSteps).length;
 
   // initialize build time
-  const NOW = new Date()
-  const sBuildTime = NOW.toLocaleDateString('en-GB', {
-    weekday: 'short',
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: 'numeric'
-  })
+  const NOW = new Date();
+  const sBuildTime = NOW.toLocaleDateString("en-GB", {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "numeric",
+  });
 
   const sCopyrightBanner = `UI development toolkit for HTML5 (OpenUI5)
  * (c) Copyright 2009-2017 SAP SE or an SAP affiliate company.
  * Licensed under the Apache License, Version 2.0 - see LICENSE.txt.
- * Build by PulseShift GmbH, OpenUI5 Version ${sUI5Version}, Buildtime ${sBuildTime}.`
+ * Build by PulseShift GmbH, OpenUI5 Version ${sUI5Version}, Buildtime ${sBuildTime}.`;
 
   /*
    * These modules (if defined) will be predelivered with sap-ui-core.js.
    */
-  const aSAPUiCorePreloadModules = []
+  const aSAPUiCorePreloadModules = [];
 
   // modules referenced in raw sap-ui-*.js directly
-  let aSAPUiCoreAutoIncludedModules = []
+  let aSAPUiCoreAutoIncludedModules = [];
 
   // found UI5 modules
-  let aUI5Modules = []
+  let aUI5Modules = [];
 
   // found UI5 themes
-  let aUI5Themes = []
+  let aUI5Themes = [];
 
   // 1. collect all module and theme paths of OpenUI5 project
   const oBuildPromiseChain = new Promise((resolve, reject) => {
     // update progress information
-    const oStep = oSteps['read modules']
-    fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+    const oStep = oSteps["read modules"];
+    fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
     // read all directories in 'src'
     return fs.readdir(
       `${sUI5SrcPath}/src/`,
       // TODO: add error message
       (oError, aPaths) => (oError ? reject() : resolve(aPaths))
-    )
+    );
   })
     .then((aPaths = []) => {
       // extract modules
       aUI5Modules = aPaths
-        .filter(sSrc => {
+        .filter((sSrc) => {
           // filter for directories only that starts with 'sap.'
           return (
             fs.statSync(path.join(`${sUI5SrcPath}/src/`, sSrc)).isDirectory() &&
-            sSrc.startsWith('sap.')
-          )
+            sSrc.startsWith("sap.")
+          );
         })
-        .map(sDir => {
+        .map((sDir) => {
           // map to complete paths
           return {
             path: `${sUI5SrcPath}/src/${sDir}`,
-            targetPath: `${sUI5TargetPath}/${sDir.split('.').join('/')}`,
-            name: sDir
-          }
-        })
+            targetPath: `${sUI5TargetPath}/${sDir.split(".").join("/")}`,
+            name: sDir,
+          };
+        });
 
       // extract themes
       aUI5Themes = aPaths
-        .filter(sSrc => {
+        .filter((sSrc) => {
           // filter for directories that only starts with 'themelib'
           return (
             fs.statSync(path.join(`${sUI5SrcPath}/src/`, sSrc)).isDirectory() &&
-            sSrc.startsWith('themelib')
-          )
+            sSrc.startsWith("themelib")
+          );
         })
-        .map(sDir => `${sUI5SrcPath}/src/${sDir}`)
+        .map((sDir) => `${sUI5SrcPath}/src/${sDir}`);
     })
     // 2. create debug resources first (rename all javascript files and copy them as debug resources)
     .then(
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['copy debug resources']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["copy debug resources"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
               .src([
-                ...aUI5Modules.map(oModule => `${oModule.path}/src/**/*.js`)
+                ...aUI5Modules.map((oModule) => `${oModule.path}/src/**/*.js`),
               ])
               // A) add -dbg suffix
-              .pipe(rename({ suffix: '-dbg' }))
+              .pipe(rename({ suffix: "-dbg" }))
               // B) update copyright of debug resources
               .pipe(
-                tap(oFile =>
+                tap((oFile) =>
                   replaceFilePlaceholders(oFile, [
-                    { identifier: '${copyright}', content: sCopyrightBanner }
+                    { identifier: "${copyright}", content: sCopyrightBanner },
                   ])
                 )
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 3. copy all other resources of modules in target directory and this time minify JS
@@ -346,8 +346,8 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['copy minified scripts and other resources']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["copy minified scripts and other resources"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
@@ -356,26 +356,26 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                 `${sUI5SrcPath}/NOTICE.txt`,
                 `${sUI5SrcPath}/README.md`,
                 // module files
-                ...aUI5Modules.map(oModule => `${oModule.path}/src/**/*`)
+                ...aUI5Modules.map((oModule) => `${oModule.path}/src/**/*`),
               ])
               // minify all JS resources
-              .pipe(gulpif('**/*.js', uglify()))
+              .pipe(gulpif("**/*.js", terser()))
               // update copyright of library less sources
               .pipe(
                 gulpif(
-                  ['**/library.source.less'],
-                  tap(oFile =>
+                  ["**/library.source.less"],
+                  tap((oFile) =>
                     replaceFilePlaceholders(oFile, [
-                      { identifier: '${copyright}', content: sCopyrightBanner }
+                      { identifier: "${copyright}", content: sCopyrightBanner },
                     ])
                   )
                 )
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 4. build and concat sap-ui-*.js resources in target location
@@ -383,8 +383,8 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['compose sap-ui-*.js resources']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["compose sap-ui-*.js resources"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
@@ -392,25 +392,25 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                 `${sUI5TargetPath}/sap-ui-core.js`,
                 `${sUI5TargetPath}/sap-ui-core-nojQuery.js`,
                 `${sUI5TargetPath}/sap-ui-core-dbg.js`,
-                `${sUI5TargetPath}/sap-ui-core-nojQuery-dbg.js`
+                `${sUI5TargetPath}/sap-ui-core-nojQuery-dbg.js`,
               ])
               .pipe(
-                tap(oFile => {
+                tap((oFile) => {
                   // parse scripts to include
                   const aRawScriptIncludes = oFile.contents
-                    .toString('utf8')
-                    .match(/raw:([\w\.\/_-]*)/gm)
+                    .toString("utf8")
+                    .match(/raw:([\w\.\/_-]*)/gm);
 
                   // continue without change if no import scripts have been found
-                  if (!aRawScriptIncludes) return oFile
+                  if (!aRawScriptIncludes) return oFile;
 
                   const aScriptIncludes = aRawScriptIncludes
-                    .map(f => f.replace('raw:', ''))
-                    .filter(f => f !== '')
+                    .map((f) => f.replace("raw:", ""))
+                    .filter((f) => f !== "");
 
                   // memorize included modules, so that we can exclude them when building library-preload for sap.ui.core
-                  if (oFile.path.endsWith('sap-ui-core.js')) {
-                    aSAPUiCoreAutoIncludedModules = aScriptIncludes
+                  if (oFile.path.endsWith("sap-ui-core.js")) {
+                    aSAPUiCoreAutoIncludedModules = aScriptIncludes;
                   }
 
                   // create include scripts content
@@ -418,52 +418,52 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                     // add preload modules for sap-ui-core.js
                     .concat(aSAPUiCorePreloadModules)
                     // request debug resources, if sap-ui-*-dbg is called
-                    .map(f =>
-                      oFile.path.endsWith('-dbg.js')
-                        ? f.replace('.js', '-dbg.js')
+                    .map((f) =>
+                      oFile.path.endsWith("-dbg.js")
+                        ? f.replace(".js", "-dbg.js")
                         : f
                     )
                     // read file
-                    .map(sScriptPath =>
+                    .map((sScriptPath) =>
                       fs.readFileSync(
                         `${sUI5TargetPath}/${sScriptPath}`,
-                        'utf8'
+                        "utf8"
                       )
                     )
                     // replace banner
-                    .map(sScriptContent =>
-                      sScriptContent.replace('${copyright}', sCopyrightBanner)
+                    .map((sScriptContent) =>
+                      sScriptContent.replace("${copyright}", sCopyrightBanner)
                     )
                     // join to single file content
-                    .join('')
+                    .join("");
 
                   // HINT: sap-ui-core.js and sap-ui-core-nojQuery.js and there equivalent debug variants, will be postprocessed in target location, again
 
                   // write concatenated scripts into file
-                  oFile.contents = new Buffer(sIncludedRawScripts)
-                  return oFile
+                  oFile.contents = Buffer.from(sIncludedRawScripts);
+                  return oFile;
                 })
               )
               // inject file by JS footer and header
-              .pipe(tap(oFile => composeSAPUiCore(oFile)))
+              .pipe(tap((oFile) => composeSAPUiCore(oFile)))
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 5. create preload bundle files for all modules (except sap.ui.core, because guess why: it has special requirements) and save them at target directory
     .then(() => {
       // update progress information
-      const oStep = oSteps['bundle modules']
-      fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+      const oStep = oSteps["bundle modules"];
+      fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
       return Promise.all(
         aUI5Modules
-          .filter(oModule => oModule.name !== 'sap.ui.core')
+          .filter((oModule) => oModule.name !== "sap.ui.core")
           .map(
-            oModule =>
+            (oModule) =>
               new Promise((resolve, reject) =>
                 gulp
                   .src([
@@ -474,7 +474,7 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                     // exclude modules that are already bundled in sap-ui-core.js
                     ...aSAPUiCoreAutoIncludedModules
                       .concat(aSAPUiCorePreloadModules)
-                      .map(sModule => `!${sUI5TargetPath}/${sModule}.js`)
+                      .map((sModule) => `!${sUI5TargetPath}/${sModule}.js`),
                   ])
                   // TODO: tap into library.js files to customize ui5 bundle
 
@@ -483,29 +483,29 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
                     ui5preload({
                       base: oModule.targetPath,
                       namespace: oModule.name,
-                      isLibrary: true // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
+                      isLibrary: true, // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
                     })
                   )
                   // transform all library-preload.json files to transform all library-preload.js (mandatory since OpenUI5 1.40)
                   .pipe(
                     gulpif(
-                      '**/library-preload.json',
-                      tap(oFile => transformPreloadJSON(oFile))
+                      "**/library-preload.json",
+                      tap((oFile) => transformPreloadJSON(oFile))
                     )
                   )
                   .pipe(
                     gulpif(
-                      '**/library-preload.json',
-                      rename({ extname: '.js' })
+                      "**/library-preload.json",
+                      rename({ extname: ".js" })
                     )
                   )
                   // save directly in target location
                   .pipe(gulp.dest(oModule.targetPath))
-                  .on('end', resolve)
-                  .on('error', reject)
+                  .on("end", resolve)
+                  .on("error", reject)
               ) // end Promise
           )
-      )
+      );
     }) // end Promise.all
     // 6. now create preload bundle files sap.ui.core, too
     .then(
@@ -524,7 +524,7 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
               // exclude modules that are already bundled in sap-ui-core.js
               ...aSAPUiCoreAutoIncludedModules
                 .concat(aSAPUiCorePreloadModules)
-                .map(sModule => `!${sUI5TargetPath}/${sModule}.js`)
+                .map((sModule) => `!${sUI5TargetPath}/${sModule}.js`),
             ])
             // TODO: tap into library.js files to customize ui5 bundle
 
@@ -532,22 +532,22 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
             .pipe(
               ui5preload({
                 base: sUI5TargetPath,
-                namespace: '',
-                isLibrary: true // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
+                namespace: "",
+                isLibrary: true, // if set to true a library-preload.json file is emitted instead of a Component-preload.js file (default)
               })
             )
             // transform all library-preload.json files to transform all library-preload.js (mandatory since OpenUI5 1.40)
             .pipe(
               gulpif(
-                '**/library-preload.json',
-                tap(oFile => transformPreloadJSON(oFile))
+                "**/library-preload.json",
+                tap((oFile) => transformPreloadJSON(oFile))
               )
             )
-            .pipe(gulpif('**/library-preload.json', rename({ extname: '.js' })))
+            .pipe(gulpif("**/library-preload.json", rename({ extname: ".js" })))
             // save directly in target location
             .pipe(gulp.dest(`${sUI5TargetPath}/sap/ui/core`))
-            .on('end', resolve)
-            .on('error', reject)
+            .on("end", resolve)
+            .on("error", reject)
         )
     )
     // NOW WE START TO UPDATE ALL THEME RESOURCES
@@ -557,47 +557,47 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['copy themes']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["copy themes"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
               .src([
                 // copy UI5 theme libraries (e.g. sap_belize, sap_bluecrystal, etc.)
-                ...aUI5Themes.map(sThemePath => `${sThemePath}/src/**/*`),
+                ...aUI5Themes.map((sThemePath) => `${sThemePath}/src/**/*`),
                 // copy UI5 base and high contrast theme from module paths
                 ...aUI5Modules.map(
-                  oModule => `${oModule.path}/src/**/themes/**/*`
-                )
+                  (oModule) => `${oModule.path}/src/**/themes/**/*`
+                ),
               ])
               // update path of base and high contrast theme
               .pipe(
-                rename(path => {
+                rename((path) => {
                   // normal path: sap/m/themes/sap_belize
                   // update path: sap.m/src/sap/m/themes/base => sap/m/themes/base
-                  const aPathChain = path.dirname.split(path.sep)
+                  const aPathChain = path.dirname.split(path.sep);
                   path.dirname =
-                    aPathChain.length > 1 && aPathChain[1] === 'src'
-                      ? aPathChain.slice(2, aPathChain.length - 1).join('/')
-                      : path.dirname
+                    aPathChain.length > 1 && aPathChain[1] === "src"
+                      ? aPathChain.slice(2, aPathChain.length - 1).join("/")
+                      : path.dirname;
                 })
               )
               // update copyright of library less sources
               .pipe(
                 gulpif(
-                  '**/library.source.less',
-                  tap(oFile =>
+                  "**/library.source.less",
+                  tap((oFile) =>
                     replaceFilePlaceholders(oFile, [
-                      { identifier: '${copyright}', content: sCopyrightBanner }
+                      { identifier: "${copyright}", content: sCopyrightBanner },
                     ])
                   )
                 )
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 8. build css libraries for all themes of all modules
@@ -605,24 +605,24 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['compile themes']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["compile themes"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
               .src([`${sUI5TargetPath}/**/themes/**/library.source.less`])
               // create library.css
               .pipe(
-                tap(oFile => {
+                tap((oFile) => {
                   // TODO: tap into library.source.less files to customize ui5 bundle
-                  ui5CompileLessLib(oFile)
+                  ui5CompileLessLib(oFile);
                 })
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 9. minify and clean up css resources
@@ -630,8 +630,8 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['post-process CSS']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["post-process CSS"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           return (
             gulp
@@ -639,15 +639,15 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
               // minify CSS as much as possible
               .pipe(
                 cleanCSS({
-                  inline: ['none'],
-                  level: 2
+                  inline: ["none"],
+                  level: 2,
                 })
               )
               // save at target location
               .pipe(gulp.dest(sUI5TargetPath))
-              .on('end', resolve)
-              .on('error', reject)
-          )
+              .on("end", resolve)
+              .on("error", reject)
+          );
         })
     )
     // 10. [FINAL STEP] last but not least: write sap-ui-version.json
@@ -655,33 +655,33 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
       () =>
         new Promise((resolve, reject) => {
           // update progress information
-          const oStep = oSteps['compose sap-ui-version.json']
-          fnProgressCallback(oStep.number, iTotalSteps, oStep.details)
+          const oStep = oSteps["compose sap-ui-version.json"];
+          fnProgressCallback(oStep.number, iTotalSteps, oStep.details);
 
           const oVersionJSON = {
             buildTimestamp: sBuildTime,
-            name: 'openui5-sdk-dist-pulseshift-custom',
+            name: "openui5-sdk-dist-pulseshift-custom",
             version: sUI5Version,
-            librares: aUI5Modules.map(oModule => ({
+            librares: aUI5Modules.map((oModule) => ({
               buildTimestamp: sBuildTime,
               name: oModule.name,
-              version: sUI5Version
-            }))
-          }
-          const sVersionJSONString = JSON.stringify(oVersionJSON, null, 2)
-          const sSuccessMessage = `UI5 build successful: ${sUI5Version}`
+              version: sUI5Version,
+            })),
+          };
+          const sVersionJSONString = JSON.stringify(oVersionJSON, null, 2);
+          const sSuccessMessage = `UI5 build successful: ${sUI5Version}`;
 
           // write JSON file
           fs.writeFile(
             `${sUI5TargetPath}/sap-ui-version.json`,
             sVersionJSONString,
-            oError => (oError ? reject() : resolve(sSuccessMessage))
-          )
+            (oError) => (oError ? reject() : resolve(sSuccessMessage))
+          );
         })
-    )
+    );
 
   // return promise
-  return oBuildPromiseChain
+  return oBuildPromiseChain;
 }
 
 /**
@@ -691,9 +691,9 @@ function ui5Build(sUI5SrcPath, sUI5TargetPath, sUI5Version, oOptions = {}) {
  * @returns {Promise} Promise.
  */
 function ui5CompileLessLib(oFile) {
-  const sDestDir = path.dirname(oFile.path)
-  const sFileName = oFile.path.split(path.sep).pop()
-  const sLessFileContent = oFile.contents.toString('utf8')
+  const sDestDir = path.dirname(oFile.path);
+  const sFileName = oFile.path.split(path.sep).pop();
+  const sLessFileContent = oFile.contents.toString("utf8");
 
   // options for less-openui5
   const oOptions = {
@@ -702,58 +702,58 @@ function ui5CompileLessLib(oFile) {
     rtl: true,
     parser: {
       filename: sFileName,
-      paths: [sDestDir]
+      paths: [sDestDir],
     },
-    compiler: { compress: false }
-  }
+    compiler: { compress: false },
+  };
 
   // build a theme
   const oBuildThemePromise = builder
     .build(oOptions)
-    .catch(oError => {
+    .catch((oError) => {
       // CSS build fails in 99% of all cases, because of a missing .less file
       // create empty LESS file and try again if build failed
 
       // try to parse error message to find out which missing LESS file caused the failed build
       const sMissingFileName = (oError.message.match(
         /((\.*?\/?)*\w.*\.\w+)/g
-      ) || [''])[0]
-      const sSourceFileName = oError.filename
+      ) || [""])[0];
+      const sSourceFileName = oError.filename;
       const sMissingFilePath = path.resolve(
         sDestDir,
-        sSourceFileName.replace('library.source.less', ''),
+        sSourceFileName.replace("library.source.less", ""),
         sMissingFileName
-      )
-      let isIssueFixed = false
+      );
+      let isIssueFixed = false;
 
       // create missing .less file (with empty content), else the library.css can't be created
       if (!fs.existsSync(sMissingFilePath)) {
         try {
-          fs.writeFileSync(sMissingFilePath, '')
-          isIssueFixed = true
+          fs.writeFileSync(sMissingFilePath, "");
+          isIssueFixed = true;
         } catch (e) {
-          isIssueFixed = false
+          isIssueFixed = false;
         }
       }
 
       if (!isIssueFixed) {
         // if this error message raises up, the build failed due to the other 1% cases
-        return Promise.reject('Compile UI5 less lib: ')
+        return Promise.reject("Compile UI5 less lib: " + (oError.message || oError));
       }
 
       // if missing file could be created, try theme build again
-      return isIssueFixed ? ui5CompileLessLib(oFile) : Promise.reject()
+      return isIssueFixed ? ui5CompileLessLib(oFile) : Promise.reject();
     })
-    .then(oResult => {
-      // build css content was successfull >> save result
+    .then((oResult) => {
+      // build css content was successful >> save result
       const aTargetFiles = [
         {
           path: `${sDestDir}/library.css`,
-          content: oResult.css
+          content: oResult.css,
         },
         {
           path: `${sDestDir}/library-RTL.css`,
-          content: oResult.cssRtl
+          content: oResult.cssRtl,
         },
         {
           path: `${sDestDir}/library-parameters.json`,
@@ -762,28 +762,28 @@ function ui5CompileLessLib(oFile) {
               oResult.variables,
               null,
               oOptions.compiler.compress ? 0 : 4
-            ) || ''
-        }
-      ]
+            ) || "",
+        },
+      ];
 
-      const aWriteFilesPromises = aTargetFiles.map(oFile => {
+      const aWriteFilesPromises = aTargetFiles.map((oFile) => {
         return new Promise((resolve, reject) =>
-          fs.writeFile(oFile.path, oFile.content, oError =>
+          fs.writeFile(oFile.path, oFile.content, (oError) =>
             oError ? reject() : resolve()
           )
-        )
-      })
+        );
+      });
 
       // return promise
-      return Promise.all(aWriteFilesPromises)
+      return Promise.all(aWriteFilesPromises);
     })
     .then(() => {
       // clear builder cache when finished to cleanup memory
-      builder.clearCache()
-      return Promise.resolve()
-    })
+      builder.clearCache();
+      return Promise.resolve();
+    });
 
-  return oBuildThemePromise
+  return oBuildThemePromise;
 }
 
 /**
@@ -793,25 +793,25 @@ function ui5CompileLessLib(oFile) {
  * @returns {Vinyl} Transformed library-preload.json.
  */
 function transformPreloadJSON(oFile) {
-  const oJSONRaw = oFile.contents.toString('utf8')
-  const sPrelaodJSON = `jQuery.sap.registerPreloadedModules(${oJSONRaw});`
-  oFile.contents = new Buffer(sPrelaodJSON)
-  return oFile
+  const oJSONRaw = oFile.contents.toString("utf8");
+  const sPrelaodJSON = `jQuery.sap.registerPreloadedModules(${oJSONRaw});`;
+  oFile.contents = Buffer.from(sPrelaodJSON);
+  return oFile;
 }
 
 // replace a list of placeholders with a list of string contents
 function replaceFilePlaceholders(oFile, aReplacementRules) {
   // parse file
-  const sRaw = oFile.contents.toString('utf8')
+  const sRaw = oFile.contents.toString("utf8");
   const sUpdatedFile = aReplacementRules.reduce((oResult, oRule) => {
-    return oResult.replace(oRule.identifier, oRule.content)
-  }, sRaw)
+    return oResult.replace(oRule.identifier, oRule.content);
+  }, sRaw);
 
   // update new raw content
-  oFile.contents = new Buffer(sUpdatedFile)
+  oFile.contents = Buffer.from(sUpdatedFile);
 
   // return updated file
-  return oFile
+  return oFile;
 }
 
 /**
@@ -822,10 +822,10 @@ function replaceFilePlaceholders(oFile, aReplacementRules) {
  */
 function composeSAPUiCore(oFile) {
   // parse sap-ui-*.js file
-  const sRaw = oFile.contents.toString('utf8')
+  const sRaw = oFile.contents.toString("utf8");
 
   // footer used in original OpenUI5 builds
-  const sComposedCore = oFile.path.endsWith('-dbg.js')
+  const sComposedCore = oFile.path.endsWith("-dbg.js")
     ? `${sRaw}
 if (!window["sap-ui-debug"]) { sap.ui.requireSync("sap/ui/core/library-preload"); }
 sap.ui.requireSync("sap/ui/core/Core");
@@ -834,11 +834,11 @@ sap.ui.getCore().boot && sap.ui.getCore().boot();`
 ${sRaw}
 if (!window["sap-ui-debug"]) { sap.ui.requireSync("sap/ui/core/library-preload"); }
 sap.ui.requireSync("sap/ui/core/Core");
-sap.ui.getCore().boot && sap.ui.getCore().boot();`
+sap.ui.getCore().boot && sap.ui.getCore().boot();`;
 
   // update new raw content
-  oFile.contents = new Buffer(sComposedCore)
+  oFile.contents = Buffer.from(sComposedCore);
 
   // return updated file
-  return oFile
+  return oFile;
 }
