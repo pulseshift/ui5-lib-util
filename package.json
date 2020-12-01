@@ -1,6 +1,6 @@
 {
   "name": "ui5-lib-util",
-  "version": "0.3.1",
+  "version": "0.3.3",
   "description": "A set of UI5 utilities to download and build OpenUI5 automatically.",
   "scripts": {
     "precommit": "lint-staged"
